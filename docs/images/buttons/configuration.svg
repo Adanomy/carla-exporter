@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="164" height="40" viewBox="0 0 164 40" role="img" aria-labelledby="title">
+  <title id="title">Configuration</title>
+  <rect x=".5" y=".5" width="163" height="39" rx="2.5" fill="#050811" stroke="#33425a"/>
+  <g fill="none" stroke="#4c82ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 15h4m6 0h7M15 25h12m6 0h-1"/>
+    <circle cx="22" cy="15" r="3"/>
+    <circle cx="30" cy="25" r="3"/>
+  </g>
+  <text x="43" y="25" fill="#edf7ff" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="600">Configuration</text>
+</svg>

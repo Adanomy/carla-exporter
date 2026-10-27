@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40" role="img" aria-labelledby="title">
+  <title id="title">Grafana</title>
+  <rect x=".5" y=".5" width="119" height="39" rx="2.5" fill="#050811" stroke="#33425a"/>
+  <path d="M15 12h17v16H15zm0 6h17m-10 0v10" fill="none" stroke="#4c82ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="41" y="25" fill="#edf7ff" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="600">Grafana</text>
+</svg>

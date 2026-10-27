@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="126" height="40" viewBox="0 0 126 40" role="img" aria-labelledby="title">
+  <title id="title">Releases</title>
+  <rect x=".5" y=".5" width="125" height="39" rx="2.5" fill="#050811" stroke="#33425a"/>
+  <path d="M23 11v13m-5-5l5 5 5-5m-12 7v4h14v-4" fill="none" stroke="#4c82ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="41" y="25" fill="#edf7ff" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="600">Releases</text>
+</svg>

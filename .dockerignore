@@ -1,0 +1,7 @@
+.git
+.idea
+bin
+dist
+__pycache__
+*.pyc
+coverage.out

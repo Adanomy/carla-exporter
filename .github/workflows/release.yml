@@ -1,0 +1,150 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify source
+        run: |
+          python3 -m unittest discover -s ci
+          test -z "$(gofmt -l cmd internal tests)"
+          go vet ./...
+          go test -race ./...
+      - name: Build and reproduce release artifacts
+        run: python3 ci/release.py --verify-reproducible
+      - name: Release metadata
+        id: metadata
+        run: |
+          printf 'version=%s\n' "${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          printf 'image=ghcr.io/%s\n' "${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          printf 'revision=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          printf 'epoch=%s\n' "$(git show -s --format=%ct HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Check release progress
+        id: progress
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ steps.metadata.outputs.image }}
+          REVISION: ${{ steps.metadata.outputs.revision }}
+        run: |
+          python3 ci/publish_release.py prepare --artifacts dist/release \
+            --tag "$GITHUB_REF_NAME" --image "$IMAGE" --revision "$REVISION"
+      - name: Set up Buildx
+        if: steps.progress.outputs.published != 'true'
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          version: v0.38.1
+      - name: Validate container platforms
+        if: steps.progress.outputs.published != 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          outputs: type=oci,dest=${{ runner.temp }}/carla-exporter.oci.tar
+          build-args: |
+            VERSION=${{ steps.metadata.outputs.version }}
+            REVISION=${{ steps.metadata.outputs.revision }}
+            SOURCE_DATE_EPOCH=${{ steps.metadata.outputs.epoch }}
+      - name: Log in to GitHub Container Registry
+        if: steps.progress.outputs.published != 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Publish container
+        id: container
+        if: steps.progress.outputs.published != 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ steps.metadata.outputs.image }}:v${{ steps.metadata.outputs.version }}
+            ${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.version }}
+          build-args: |
+            VERSION=${{ steps.metadata.outputs.version }}
+            REVISION=${{ steps.metadata.outputs.revision }}
+            SOURCE_DATE_EPOCH=${{ steps.metadata.outputs.epoch }}
+      - name: Publish or resume GitHub release
+        if: steps.progress.outputs.published != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ steps.metadata.outputs.image }}
+          DIGEST: ${{ steps.container.outputs.digest }}
+          REVISION: ${{ steps.metadata.outputs.revision }}
+        run: |
+          python3 ci/publish_release.py publish --artifacts dist/release \
+            --tag "$GITHUB_REF_NAME" --image "$IMAGE" --revision "$REVISION" --digest "$DIGEST"
+
+  latest:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: release-container-latest
+      cancel-in-progress: false
+    steps:
+      - name: Select latest stable release
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name' \
+            > "$RUNNER_TEMP/stable-release-tags"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+
+          pattern = re.compile(r"v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", re.ASCII)
+          tags = [tag for tag in (Path(os.environ["RUNNER_TEMP"]) / "stable-release-tags").read_text().splitlines()
+                  if pattern.fullmatch(tag)]
+          if not tags:
+              raise SystemExit("No published stable release is available for the latest image tag")
+          tag = max(tags, key=lambda value: tuple(map(int, value[1:].split("."))))
+          image = "ghcr.io/" + os.environ["GITHUB_REPOSITORY"].lower()
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+              output.write(f"image={image}\ntag={tag}\n")
+          PY
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          version: v0.38.1
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Update latest image tag
+        env:
+          IMAGE: ${{ steps.latest.outputs.image }}
+          TAG: ${{ steps.latest.outputs.tag }}
+        run: docker buildx imagetools create --tag "$IMAGE:latest" "$IMAGE:$TAG"
