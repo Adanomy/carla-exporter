@@ -13,7 +13,10 @@ gofmt -w cmd internal tests
 go vet ./...
 go test -race ./...
 CGO_ENABLED=0 go build -trimpath -o bin/carla-exporter ./cmd/carla-exporter
+python3 -m unittest discover -s grafana
 ```
+
+Dashboard query tests require Python 3 and either `promtool` or Docker. They evaluate the saved PromQL against restart, duplicate, conflict, and missing-data scenarios.
 
 The default tests use local wire servers and require no CARLA installation.
 Set `CARLA_ADDRESS=host:port` to enable the read-only live test. Optional

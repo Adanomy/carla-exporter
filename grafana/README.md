@@ -9,11 +9,11 @@ Set the Prometheus datasource's scrape interval to match the actual Prometheus j
 
 ## Coordinates
 
-The XY panel displays sampled CARLA world positions with **+X to the right and +Y upward**, using the original coordinates without sign changes. The coordinate table preserves the original X/Y/Z values in meters and includes a Z-history sparkline for the selected period; Z points upward in CARLA's left-handed world frame.
+The XY panel displays **one point per vehicle**, using the latest available X/Y pair at the selected time range end. Missing or conflicting pairs are omitted. **+X points to the right and +Y upward**, using the original coordinates without sign changes. The coordinate table preserves the original X/Y/Z values in meters and includes a Z-history sparkline for the selected period; Z points upward in CARLA's left-handed world frame.
 
 A map viewer can rotate or reflect its screen coordinates. Matching its image requires that viewer's world-to-image transform; a universal north-up or image-aligned orientation cannot be inferred from vehicle coordinates. XY axes autoscale independently, so pixel distances do not represent a fixed map scale.
 
-Points follow the scrape interval and query resolution rather than every simulation frame. Vehicles and episodes remain separate; missing samples are not filled with zero.
+The XY panel shows the current position at the selected range end; the other vehicle charts retain sampled history. Vehicles remain separate by source, actor and role, while episode changes do not split the same vehicle's history. Missing samples are not filled with zero.
 
 See [CARLA coordinate conventions](https://carla.readthedocs.io/en/latest/coordinates/).
 

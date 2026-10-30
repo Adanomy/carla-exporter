@@ -16,7 +16,7 @@ Supports **0.9.12–0.9.16** and **0.10.0 (UE5)** with automatic protocol select
 [![Grafana](docs/images/buttons/grafana.svg)](https://grafana.com/grafana/dashboards/25974)
 [![Configuration](docs/images/buttons/configuration.svg)](#configuration)
 
-[![CARLA Exporter dashboard with simulation performance, world settings, vehicle positions, coordinates, speed, and yaw](docs/images/dashboard.png)](docs/images/dashboard.png)
+[![CARLA Exporter dashboard overview with simulation performance, connection health, world information, and actor counts](docs/images/dashboard.png)](docs/images/dashboard.png)
 
 ## Quick start
 
