@@ -854,6 +854,8 @@ class DashboardTests(unittest.TestCase):
                     docker,
                     "run",
                     "--rm",
+                    "--user",
+                    f"{os.getuid()}:{os.getgid()}",
                     "--entrypoint",
                     "/bin/promtool",
                     "-v",
